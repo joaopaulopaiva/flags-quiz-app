@@ -9,9 +9,11 @@ const FlagQuizApp = () => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
-  const [autoAdvanceSeconds, setAutoAdvanceSeconds] = useState(3);
+  const [autoAdvanceSeconds, setAutoAdvanceSeconds] = useState(2);
   const [timer, setTimer] = useState(null);
   const [quizMode, setQuizMode] = useState(null);
+  const [usedFlags, setUsedFlags] = useState([]);
+  const [showComplete, setShowComplete] = useState(false);
 
   const translations = {
     en: {
@@ -29,14 +31,17 @@ const FlagQuizApp = () => {
       next: "Next",
       backToMenu: "Back to Menu",
       whichCountry: "Which country does this flag belong to?",
-      whichState: "Which Brazilian state does this flag belong to?"
+      whichState: "Which Brazilian state does this flag belong to?",
+      quizComplete: "Quiz Complete!",
+      finalScore: "Final Score",
+      restart: "Restart Quiz"
     },
     pt: {
       title: "Quiz de Bandeiras",
       selectMode: "Selecione o Modo do Quiz",
       countriesMode: "Países do Mundo",
       brazilMode: "Estados Brasileiros",
-      score: "Corretas",
+      score: "Certas",
       wrongScore: "Erradas",
       settings: "Configurações",
       autoAdvance: "Avançar automaticamente para próxima pergunta",
@@ -46,7 +51,10 @@ const FlagQuizApp = () => {
       next: "Próximo",
       backToMenu: "Voltar ao Menu",
       whichCountry: "A qual país pertence esta bandeira?",
-      whichState: "A qual estado brasileiro pertence esta bandeira?"
+      whichState: "A qual estado brasileiro pertence esta bandeira?",
+      quizComplete: "Quiz Completo!",
+      finalScore: "Pontuação Final",
+      restart: "Reiniciar Quiz"
     }
   };
 
@@ -312,7 +320,17 @@ const FlagQuizApp = () => {
     if (timer) clearTimeout(timer);
 
     const dataSet = quizMode === 'countries' ? countries : brazilianStates;
-    const correctItem = dataSet[Math.floor(Math.random() * dataSet.length)];
+
+    // Check if all flags have been used
+    if (usedFlags.length >= dataSet.length) {
+      setShowComplete(true);
+      return;
+    }
+
+    // Get available flags (not yet used)
+    const availableFlags = dataSet.filter(item => !usedFlags.includes(item.code));
+
+    const correctItem = availableFlags[Math.floor(Math.random() * availableFlags.length)];
     const wrongItems = [];
 
     while (wrongItems.length < 3) {
@@ -328,6 +346,9 @@ const FlagQuizApp = () => {
       correct: correctItem,
       options: options
     });
+
+    // Mark this flag as used
+    setUsedFlags([...usedFlags, correctItem.code]);
   };
 
   const handleAnswer = (item) => {
@@ -347,6 +368,18 @@ const FlagQuizApp = () => {
     setWrongAnswers(0);
     setCurrentQuestion(null);
     setSelectedAnswer(null);
+    setUsedFlags([]);
+    setShowComplete(false);
+  };
+
+  const handleRestart = () => {
+    setScore(0);
+    setWrongAnswers(0);
+    setCurrentQuestion(null);
+    setSelectedAnswer(null);
+    setUsedFlags([]);
+    setShowComplete(false);
+    setTimeout(() => generateQuestion(), 100);
   };
 
   const t = translations[language];
@@ -481,20 +514,22 @@ const FlagQuizApp = () => {
             </div>
           )}
 
-          {currentQuestion && (
+          {currentQuestion && !showComplete && (
             <div>
               <p className="text-center text-lg mb-4 text-gray-700">
                 {quizMode === 'countries' ? t.whichCountry : t.whichState}
               </p>
 
               <div className="flex justify-center mb-6">
-                <img
-                  src={quizMode === 'countries'
-                    ? `https://flagcdn.com/w320/${currentQuestion.correct.code.toLowerCase()}.png`
-                    : currentQuestion.correct.flag}
-                  alt="Flag"
-                  className="w-64 h-48 object-cover rounded-lg shadow-lg border-4 border-gray-200"
-                />
+                <div className="w-80 h-56 flex items-center justify-center bg-gray-50 rounded-lg shadow-lg border-4 border-gray-200">
+                  <img
+                    src={quizMode === 'countries'
+                      ? `https://flagcdn.com/w320/${currentQuestion.correct.code.toLowerCase()}.png`
+                      : currentQuestion.correct.flag}
+                    alt="Flag"
+                    className="max-w-full max-h-full object-contain p-2"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 mb-4">
@@ -536,6 +571,43 @@ const FlagQuizApp = () => {
                   {t.next}
                 </button>
               )}
+            </div>
+          )}
+
+          {showComplete && (
+            <div className="text-center py-8">
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold text-indigo-600 mb-4">{t.quizComplete}</h2>
+                <p className="text-xl text-gray-700 mb-6">{t.finalScore}</p>
+              </div>
+
+              <div className="flex gap-4 justify-center mb-8">
+                <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200 flex-1 max-w-xs">
+                  <Trophy className="w-12 h-12 text-green-600 mx-auto mb-2" />
+                  <p className="text-3xl font-bold text-green-700">{score}</p>
+                  <p className="text-sm text-green-600">{t.score}</p>
+                </div>
+                <div className="bg-red-50 p-6 rounded-lg border-2 border-red-200 flex-1 max-w-xs">
+                  <XCircle className="w-12 h-12 text-red-600 mx-auto mb-2" />
+                  <p className="text-3xl font-bold text-red-700">{wrongAnswers}</p>
+                  <p className="text-sm text-red-600">{t.wrongScore}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={handleRestart}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                >
+                  {t.restart}
+                </button>
+                <button
+                  onClick={handleBackToMenu}
+                  className="px-8 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+                >
+                  {t.backToMenu}
+                </button>
+              </div>
             </div>
           )}
         </div>
