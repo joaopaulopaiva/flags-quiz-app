@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/flags-quiz-app/static/js/main.9533e164.js",
+    "index.html": "/flags-quiz-app/index.html",
+    "main.9533e164.js.map": "/flags-quiz-app/static/js/main.9533e164.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.9533e164.js"
+  ]
+}
