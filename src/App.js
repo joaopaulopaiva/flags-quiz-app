@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Trophy, X, XCircle, Globe, Map } from 'lucide-react';
+import { Settings, Trophy, X, XCircle, Globe, Map, RotateCcw } from 'lucide-react';
 
 const FlagQuizApp = () => {
   const [language, setLanguage] = useState('en');
@@ -290,20 +290,55 @@ const FlagQuizApp = () => {
   ];
 
   useEffect(() => {
-    const portugueseSpeaking = ['BR', 'PT', 'AO', 'MZ', 'GW', 'TL', 'GQ', 'CV', 'ST'];
+    const portugueseSpeaking = new Set(['BR', 'PT', 'AO', 'MZ', 'GW', 'TL', 'GQ', 'CV', 'ST']);
     const userLang = navigator.language.split('-')[0];
     const userCountry = navigator.language.split('-')[1];
 
-    if (userLang === 'pt' || portugueseSpeaking.includes(userCountry)) {
-      setLanguage('pt');
+    // Try to load saved state
+    try {
+      const savedState = JSON.parse(localStorage.getItem('flagQuizState') || '{}');
+      if (savedState.language) setLanguage(savedState.language);
+      else if (userLang === 'pt' || portugueseSpeaking.has(userCountry)) {
+        setLanguage('pt');
+      }
+
+      if (savedState.autoAdvance !== undefined) setAutoAdvance(savedState.autoAdvance);
+      if (savedState.autoAdvanceSeconds) setAutoAdvanceSeconds(savedState.autoAdvanceSeconds);
+      if (savedState.quizMode) setQuizMode(savedState.quizMode);
+      if (savedState.score !== undefined) setScore(savedState.score);
+      if (savedState.wrongAnswers !== undefined) setWrongAnswers(savedState.wrongAnswers);
+      if (savedState.usedFlags) setUsedFlags(savedState.usedFlags);
+      if (savedState.showComplete !== undefined) setShowComplete(savedState.showComplete);
+    } catch (e) {
+      // If loading fails, just use defaults
+      if (userLang === 'pt' || portugueseSpeaking.has(userCountry)) {
+        setLanguage('pt');
+      } else {
+        throw e;
+      }
     }
   }, []);
 
   useEffect(() => {
-    if (quizMode && !currentQuestion) {
+    if (quizMode && !currentQuestion && !showComplete) {
       generateQuestion();
     }
   }, [quizMode]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const stateToSave = {
+      language,
+      autoAdvance,
+      autoAdvanceSeconds,
+      quizMode,
+      score,
+      wrongAnswers,
+      usedFlags,
+      showComplete
+    };
+    localStorage.setItem('flagQuizState', JSON.stringify(stateToSave));
+  }, [language, autoAdvance, autoAdvanceSeconds, quizMode, score, wrongAnswers, usedFlags, showComplete]);
 
   useEffect(() => {
     if (selectedAnswer !== null && autoAdvance) {
@@ -429,7 +464,7 @@ const FlagQuizApp = () => {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-indigo-600">{t.title}</h1>
+            <div className="flex-1"></div>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -438,19 +473,26 @@ const FlagQuizApp = () => {
             </button>
           </div>
 
-          <div className="flex gap-4 mb-6">
-            <div className="flex items-center gap-2 bg-green-50 p-3 rounded-lg flex-1">
+          <div className="flex gap-4 mb-6 items-center">
+            <div className="flex items-center justify-center gap-2 bg-green-50 p-3 rounded-lg flex-1">
               <Trophy className="w-6 h-6 text-green-600" />
-              <span className="text-lg font-semibold text-green-700">
-                {t.score}: {score}
+              <span className="text-2xl font-bold text-green-700">
+                {score}
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-red-50 p-3 rounded-lg flex-1">
+            <div className="flex items-center justify-center gap-2 bg-red-50 p-3 rounded-lg flex-1">
               <XCircle className="w-6 h-6 text-red-600" />
-              <span className="text-lg font-semibold text-red-700">
-                {t.wrongScore}: {wrongAnswers}
+              <span className="text-2xl font-bold text-red-700">
+                {wrongAnswers}
               </span>
             </div>
+            <button
+              onClick={handleRestart}
+              className="p-3 bg-indigo-100 hover:bg-indigo-200 rounded-lg transition-colors"
+              title={t.restart}
+            >
+              <RotateCcw className="w-6 h-6 text-indigo-600" />
+            </button>
           </div>
 
           {showSettings && (
