@@ -3,6 +3,9 @@ import { Settings, Trophy, X, XCircle, Globe, Map, RotateCcw } from 'lucide-reac
 import {translations} from "./data/translations";
 import {countries} from "./data/countries";
 import {brazilianStates} from "./data/brazilianStates";
+import ReactGA from 'react-ga4';
+
+ReactGA.initialize('G-EDYNX0XZQX');
 
 const FlagQuizApp = () => {
   const [language, setLanguage] = useState('en');
